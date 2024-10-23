@@ -16,7 +16,10 @@ def get_book_details(url, soup_book):
         review_rating = soup_book.find_all('p', class_='star-rating')[0]['class'][1]
         image_url = soup_book.find('img')['src'].replace('../../', '')
         img_url = url + image_url
+        # si la catégorie possède plus d'un mot, on rajoute un espace avant le nom de la catégorie
         category = soup_book.find_all('ul', class_='breadcrumb')[0].find_all('a')[2].text
+        if len(category.split()) > 1:
+            category = ' ' + category
         div_description = soup_book.find('div', id='product_description')
         description = div_description.find_next('p').text if div_description else "No description available"
         return [title, upc, price_including_tax, price_excluding_tax, number_available, description, review_rating, img_url, category]
@@ -31,10 +34,11 @@ def print_url_images (url, soup_book):
     try:
         image_url = soup_book.find('img')['src'].replace('../../', '')
         img_url = url + image_url
-        h1 = soup_book.find('h1').text
-        print(img_url)
+        h1 = soup_book.find('h1').text.replace(' ', '').replace(':', '').replace('/', '').replace('?', '').replace('!', '').replace(';', '').replace(',', '').replace('.', '').replace('\'', '').replace('\"', '').replace('*', '').replace('’', '')
         response = requests.get(img_url)
-        with open(f'images/{h1}.jpg', 'wb') as file:
+        # récupérer le nom de la catégorie
+        category = soup_book.find_all('ul', class_='breadcrumb')[0].find_all('a')[2].text.replace(' ', '')
+        with open(f'{category}/{h1}.jpg', 'wb') as file:
             file.write(response.content)
 
         
@@ -52,13 +56,11 @@ def process_books_on_page(soup_category, url, writer, number_books):
         try:
             link = soup_category.find_all('h3')[i].find('a')['href']
             url_book = url + 'catalogue/' + link.replace('../', '')
-            print(f"Processing book URL: {url_book}")
             response_book = requests.get(url_book)
             soup_book = BeautifulSoup(response_book.text, 'html.parser')
             book_details = get_book_details(url, soup_book)
             if book_details:
                 writer.writerow([url_book] + book_details)
-                print_url_images(url, soup_book)
                 
         except IndexError:
             print(f"No more books on this page at index {i}.")
@@ -100,36 +102,36 @@ def scraping_books(url_category, url, writer):
             url_next_page = url_category.replace('index.html', '') + next_page
             response_category = requests.get(url_next_page)
             soup_category = BeautifulSoup(response_category.text, 'html.parser')
-            print(soup_category.find('li', class_='next'))
             if not soup_category.find('li', class_='next'):
                 print("No more pages to process.")
                 break
     except Exception as e: 
         print(f"Erreur générale lors du scraping : {e}")
 
+
 if __name__ == "__main__":
     """
-    On fait tourner tout le programme, et on va mettre les en tête du fichier csv  et appeler la fonction scraping_books
-    Egalement pour l'enregistrement des images, on va créer un dossier images où on téléchargera les images dedans. 
-    Si il en existe déjà un , on va supprimer les images déjà existantes dans le dossier
+    On va scrapper les livres de chaque catégorie et les écrire dans un fichier csv nommé avec le nom de la catégorie en faisant une boucle
+    On va aussi créer un dossier pour chaque catégorie et télécharger les images des livres dans ces dossiers
+    Si un dossier est déjà existant, on va supprimer les fichiers précédents.
     """
     url = 'https://books.toscrape.com/'
-
-    with open('category.csv', 'w', newline='', encoding='utf8') as fichier_csv:
-        writer = csv.writer(fichier_csv)
-        writer.writerow(['product_page_url', 'title', 'upc', 'price_including_tax', 'price_excluding_tax', 'number_available', 'product_description', 'review_rating', 'image_url', 'category'])
-        
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        categories = soup.find_all('ul', class_='nav nav-list')
-        link = categories[0].find_all('a')[2]['href']  
+    response = requests.get(url, timeout=10)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    categories = soup.find_all('ul', class_='nav nav-list')
+    number_categories = len(categories[0].find_all('a'))
+    for i in range(1, number_categories):
+        link = categories[0].find_all('a')[i]['href']  
         url_category = url + link
-        if not os.path.exists('images'):
-            os.makedirs('images')
-        else:
-            for file in os.listdir('images'):
-                os.remove(f'images/{file}')
-
-        
-        
-        scraping_books(url_category, url, writer)
+        category = categories[0].find_all('a')[i].text
+        category = ''.join(e for e in category if e.isalnum())
+        print(category)
+        with open(f'{category}.csv', 'w', newline='', encoding='utf8') as fichier_csv:
+            writter = csv.writer(fichier_csv)
+            writter.writerow(['product_page_url', 'title', 'upc', 'prince_including_tax', 'prince_excluding_tax', 'number_available', 'product_description', 'review_rating', 'image_url', 'category'])
+            if not os.path.exists(f'{category}'):
+                os.makedirs(f'{category}')
+            else:
+                for file in os.listdir(f'{category}'):
+                    os.remove(f'{category}/{file}')
+            scraping_books(url_category, url, writter)

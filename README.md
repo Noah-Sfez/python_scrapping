@@ -18,3 +18,11 @@ Je récupère dedans l'url d'une catégorie, et une fois l'url stockée, je scra
 Si il y'a plusieurs pages à l'intérieur de la catégorie, je passe à la page suivante, une fois tous les livres de la page scrappés
 
 PHASE 3 : 
+On ajoute les images des livres que l'on a consulté sur le site, directement dans le dossier images, en renommant les images avec le nom 
+des livres.
+
+PHASE 4 : 
+On boucle en récupérant tous les livres de toutes les catégories du site. 
+Pour chaque catégorie on va créer un fichier csv avec le nom de la catégorie ainsi qu'un dossier pour pouvoir stocker toutes les images des livres
+de la catégorie.
+Pour chaque catégorie on va stocker toutes les données des livres dans le fichier csv correspondant. 
