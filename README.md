@@ -16,3 +16,5 @@ PHASE 2 :
 Modification du code pour en faisant des fonctions pour éviter de réécrire plusieurs les mêmes lignes
 Je récupère dedans l'url d'une catégorie, et une fois l'url stockée, je scrappe les données de tous les livres de la catégorie
 Si il y'a plusieurs pages à l'intérieur de la catégorie, je passe à la page suivante, une fois tous les livres de la page scrappés
+
+PHASE 3 : 

@@ -1,6 +1,7 @@
 import csv
 import requests
 from bs4 import BeautifulSoup
+import os
 
 def get_book_details(url, soup_book):
     """
@@ -22,6 +23,26 @@ def get_book_details(url, soup_book):
     except Exception as e:
         print(f"Erreur lors de la récupération des détails du livre : {e}")
         return None
+    
+def print_url_images (url, soup_book):
+    """
+    On récupère les url des images, on les renomme avec le titre du livre et on les télécharhe dans le dossier images
+    """
+    try:
+        image_url = soup_book.find('img')['src'].replace('../../', '')
+        img_url = url + image_url
+        h1 = soup_book.find('h1').text
+        print(img_url)
+        response = requests.get(img_url)
+        with open(f'images/{h1}.jpg', 'wb') as file:
+            file.write(response.content)
+
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération de l'url de l'image : {e}")
+        return None
+
+
 
 def process_books_on_page(soup_category, url, writer, number_books):
     """
@@ -37,6 +58,8 @@ def process_books_on_page(soup_category, url, writer, number_books):
             book_details = get_book_details(url, soup_book)
             if book_details:
                 writer.writerow([url_book] + book_details)
+                print_url_images(url, soup_book)
+                
         except IndexError:
             print(f"No more books on this page at index {i}.")
             break
@@ -87,6 +110,8 @@ def scraping_books(url_category, url, writer):
 if __name__ == "__main__":
     """
     On fait tourner tout le programme, et on va mettre les en tête du fichier csv  et appeler la fonction scraping_books
+    Egalement pour l'enregistrement des images, on va créer un dossier images où on téléchargera les images dedans. 
+    Si il en existe déjà un , on va supprimer les images déjà existantes dans le dossier
     """
     url = 'https://books.toscrape.com/'
 
@@ -97,7 +122,14 @@ if __name__ == "__main__":
         response = requests.get(url)
         soup = BeautifulSoup(response.text, 'html.parser')
         categories = soup.find_all('ul', class_='nav nav-list')
-        link = categories[0].find_all('a')[4]['href']  
+        link = categories[0].find_all('a')[2]['href']  
         url_category = url + link
+        if not os.path.exists('images'):
+            os.makedirs('images')
+        else:
+            for file in os.listdir('images'):
+                os.remove(f'images/{file}')
+
+        
         
         scraping_books(url_category, url, writer)
