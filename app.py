@@ -61,7 +61,8 @@ def process_books_on_page(soup_category, url, writer, number_books):
             book_details = get_book_details(url, soup_book)
             if book_details:
                 writer.writerow([url_book] + book_details)
-                
+                print_url_images(url, soup_book)
+
         except IndexError:
             print(f"No more books on this page at index {i}.")
             break
@@ -120,13 +121,22 @@ if __name__ == "__main__":
     soup = BeautifulSoup(response.text, 'html.parser')
     categories = soup.find_all('ul', class_='nav nav-list')
     number_categories = len(categories[0].find_all('a'))
+    # si il y'a déjà un dossier csv, on le supprime
+    if os.path.exists('csv'):
+        for file in os.listdir('csv'):
+            os.remove(f'csv/{file}')
+        os.rmdir('csv')
     for i in range(1, number_categories):
         link = categories[0].find_all('a')[i]['href']  
         url_category = url + link
         category = categories[0].find_all('a')[i].text
         category = ''.join(e for e in category if e.isalnum())
         print(category)
-        with open(f'{category}.csv', 'w', newline='', encoding='utf8') as fichier_csv:
+        # créer un dossier nommé csv
+        if not os.path.exists('csv'):
+            os.makedirs('csv')
+
+        with open(f'csv/{category}.csv', 'w', newline='', encoding='utf8') as fichier_csv:
             writter = csv.writer(fichier_csv)
             writter.writerow(['product_page_url', 'title', 'upc', 'prince_including_tax', 'prince_excluding_tax', 'number_available', 'product_description', 'review_rating', 'image_url', 'category'])
             if not os.path.exists(f'{category}'):
